@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+
+
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowRight,
   BookOpen,
@@ -11,9 +15,70 @@ import {
   Lock,
   Sparkles,
 } from "lucide-react";
+import { loginAction } from "@/services/auth/auth.action";
+import { loginSchema } from "@/lib/validations/auth.validation";
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+
+  const router = useRouter();
+
+const [isPending, setIsPending] = useState(false);
+
+const [errors, setErrors] = useState<{
+  email?: string;
+  password?: string;
+}>({});
+
+async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+
+  setErrors({});
+
+  const formData = new FormData(e.currentTarget);
+
+  const values = {
+    email: formData.get("email") as string,
+    password: formData.get("password") as string,
+  };
+
+  console.log("login value: ",values)
+
+  // Zod validation
+  const validation = loginSchema.safeParse(values);
+
+  if (!validation.success) {
+    const fieldErrors = validation.error.flatten().fieldErrors;
+
+    setErrors({
+      email: fieldErrors.email?.[0],
+      password: fieldErrors.password?.[0],
+    });
+
+    return;
+  }
+
+  try {
+    setIsPending(true);
+
+    const result = await loginAction(validation.data);
+
+    if (!result.success) {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success(result.message);
+
+    router.replace("/");
+    router.refresh();
+  } catch {
+    toast.error("Something went wrong. Please try again.");
+  } finally {
+    setIsPending(false);
+  }
+}
+
 
   return (
     <main className="min-h-[calc(100vh-64px)] bg-[#F8F7F2] dark:bg-[#111413]">
@@ -123,7 +188,7 @@ export default function LoginForm() {
             </div>
 
             {/* Login Form */}
-            <form className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-5">
 
               {/* Email */}
               <div className="space-y-2">
@@ -150,6 +215,9 @@ export default function LoginForm() {
                     className="h-12 w-full rounded-xl border border-[#E3E2DB] bg-white pl-12 pr-4 text-sm text-[#202522] outline-none transition-all placeholder:text-[#A4AAA4] focus:border-[#315C50] focus:ring-2 focus:ring-[#315C50]/10 dark:border-[#303633] dark:bg-[#171A19] dark:text-[#F2F3EF] dark:focus:border-[#79B5A0] dark:focus:ring-[#79B5A0]/10"
                   />
                 </div>
+                {errors.email && (
+  <p className="text-sm text-red-500">{errors.email}</p>
+)}
               </div>
 
               {/* Password */}
@@ -199,6 +267,9 @@ export default function LoginForm() {
                     )}
                   </button>
                 </div>
+                {errors.password && (
+  <p className="text-sm text-red-500">{errors.password}</p>
+)}
               </div>
 
               {/* Remember Me */}
@@ -220,12 +291,12 @@ export default function LoginForm() {
 
               {/* Submit */}
               <button
-                type="submit"
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#315C50] text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#25483E] active:scale-[0.99] dark:bg-[#79B5A0] dark:text-[#171A19] dark:hover:bg-[#91C5B1]"
-              >
-                Sign in
-                <ArrowRight size={17} />
-              </button>
+  type="submit"
+  disabled={isPending}
+  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#315C50] text-sm font-semibold text-white transition-all hover:bg-[#25483E] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#79B5A0] dark:text-[#171A19]"
+>
+  {isPending ? "Signing in..." : "Sign in"}
+</button>
             </form>
 
             {/* Divider */}
