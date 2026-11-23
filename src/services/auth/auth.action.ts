@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 interface LoginResponse {
   success: boolean;
@@ -8,6 +8,7 @@ interface LoginResponse {
   data?: {
     accessToken?: string;
     refreshToken?: string;
+    token?:string;
     user?: {
       id: string;
       email: string;
@@ -43,24 +44,17 @@ export async function loginAction(payload: {
     }
 
     // Set authentication cookies
-    const cookieStore = await cookies();
+
+    if (result.data?.token) {
+     await cookieUtils.setCookie("better-auth.session_token",result.data.token)
+    }
 
     if (result.data?.accessToken) {
-      cookieStore.set("accessToken", result.data.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-      });
+      await cookieUtils.setCookie("accessToken",result.data.accessToken)
     }
 
     if (result.data?.refreshToken) {
-      cookieStore.set("refreshToken", result.data.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-      });
+     await cookieUtils.setCookie("refreshToken",result.data.refreshToken)
     }
 
     return {
