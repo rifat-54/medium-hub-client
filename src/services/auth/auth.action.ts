@@ -6,8 +6,8 @@ interface LoginResponse {
   success: boolean;
   message: string;
   data?: {
-    accessToken?: string;
-    refreshToken?: string;
+    access_token?: string;
+    refresh_token?: string;
     token?:string;
     user?: {
       id: string;
@@ -49,12 +49,12 @@ export async function loginAction(payload: {
      await cookieUtils.setCookie("better-auth.session_token",result.data.token)
     }
 
-    if (result.data?.accessToken) {
-      await cookieUtils.setCookie("accessToken",result.data.accessToken)
+    if (result.data?.access_token) {
+      await cookieUtils.setCookie("access_token",result.data.access_token)
     }
 
-    if (result.data?.refreshToken) {
-     await cookieUtils.setCookie("refreshToken",result.data.refreshToken)
+    if (result.data?.refresh_token) {
+     await cookieUtils.setCookie("refresh_token",result.data.refresh_token)
     }
 
     return {
